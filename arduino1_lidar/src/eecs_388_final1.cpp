@@ -19,9 +19,7 @@ void setup()
 {
 uart_init();
 
-return;
 }
-
 /******************************************************************************
  *   Function: loop() - Main execution loop
  *      Pre condition: 
@@ -51,17 +49,35 @@ while( 1 )
     */
     if ('Y' == ser_read() && 'Y' == ser_read()) 
         {
-        /* 
+        //read the distance bytes
+        uint8_t distance_low = ser_read();
+        uint8_t distance_high = ser_read();
 
-            - print the measured value to the console (i.e. the serial monitor) 
-            - You can use ser_printf() or ser_printline() or ser_write()
-            
-            - Helpful guide for printing with variadic function similiar to printf()
-            - https://en.cppreference.com/w/cpp/io/c/fprintf
+        //read the remaining bytes
+        uint8_t strength_low = ser_read();
+        uint8_t strength_high = ser_read();
+        uint8_t reserved = ser_read();
+        uint8_t quality = ser_read();
+        uint8_t checksum = ser_read();
 
+        //calculate the checksum
+        uint8_t sum = 0x59 + 0x59;
+        sum += distance_low;
+        sum += distance_high;
+        sum += strength_low;
+        sum += strength_high;
+        sum += reserved;
+        sum += quality;
 
-			- Send the distance to Arduino2
-        */
+        //checks if the data is valid
+        if (sum == checksum)
+        {
+            //combine distance bytes
+            dist = (distance_high << 8) | distance_low;
+
+            //print the distance
+            ser_printf("Distance: %u cm\n", dist);
+        }
         }
     }
 

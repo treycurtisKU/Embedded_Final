@@ -18,6 +18,7 @@
 #define MIN_ANGLE       (0)       /* degrees */
 #define MAX_ANGLE       (180)     /* degrees */
 
+uint16_t dist = 250;
 
 /******************************************************************************
  *   Local function prototypes
@@ -37,6 +38,36 @@ static void auto_brake()
     // Task-2: 
     // Your code goes here (Use Lab 2 & 4 for reference)
     // Check the project document to understand the task
+    if (dist > 200)
+    {
+      //safe green
+      gpio_write(GPIO_13, OFF);
+      gpio_write(GPIO_12, ON);
+      gpio_write(GPIO_11, OFF);
+    }
+    else if (dist >100)
+    {
+      //light braking yellow
+      gpio_write(GPIO_13, ON);
+      gpio_write(GPIO_12, ON);
+      gpio_write(GPIO_11, OFF);
+    }
+    else if (dist > 60)
+    {
+      //hard braking red
+      gpio_write(GPIO_13, ON);
+      gpio_write(GPIO_12, OFF);
+      gpio_write(GPIO_11, OFF);
+    }
+    else{
+      //stop flashing red
+      gpio_write(GPIO_13, ON);
+      gpio_write(GPIO_12, OFF);
+      gpio_write(GPIO_11, OFF);
+      delay_ms(50);
+      gpio_write(GPIO_13, OFF);
+      delay_ms(50);
+    }
 }
 
 
@@ -89,6 +120,24 @@ ser_printf("System Initialized");
  *******************************************************************************/
 void loop() 
 {
+  //task 2 testing
+  dist = 250;
+  auto_brake();
+  delay_ms(3000);
+
+  dist = 150;
+  auto_brake();
+  delay_ms(3000);
+
+  dist = 80;
+  auto_brake();
+  delay_ms(3000);
+
+  dist = 40;
+  for (int i = 0; i < 30; i++)
+  {
+    auto_brake();
+  }
 // Task-4: 
 // Setup simulated code for the angles from the lab sheet
 int angle;
