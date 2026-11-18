@@ -50,7 +50,7 @@ static void auto_brake()
 
   uint16_t dist = 0;
   // Snippet from Lab 4 eecs_388_tfmini.cpp lines 61-81, 107-109
-  //ADAPTED: 
+  // ADAPTED: Use AA/55 headers and XOR checksum; return on invalid packets.
   uint8_t one = ser_read();
   if (0xAA == one)
   {
@@ -62,9 +62,16 @@ static void auto_brake()
 
       uint8_t checksum = ser_read();
 
-      uint8_t sum = Dist_L ^ Dist_H;
+      uint8_t sum = one + two + Dist_L + Dist_H + five + six + seven + eight;
 
       if (checksum == sum)
+      {
+        dist = Dist_L | ((uint16_t)Dist_H << 8);
+      }
+      else
+      {
+        return;
+      }
     }
   }
   // End snippet from Lab 4 eecs_388_tfmini.cpp lines 61-81, 107-109
