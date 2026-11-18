@@ -364,3 +364,39 @@ void uart_init()
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8-bit data, leaves parity/stop/mode to defaults (no parity, 1 stop, async)
 }
 
+// Snippet from Lab 9 eecs_388_lib.c lines 293-326
+void set_cycles(uint16_t cycle)
+{
+	// Task 2.2
+	// Clear the count in Timer1
+	volatile uint16_t *x = (volatile uint16_t *)0x84; // Create a pointer to address 0x84
+	*x = 0; //set it to zero
+
+	// Set the compare value in the OCR1A register
+	OCR1A = cycle;
+}
+
+void enable_interrupt(void)
+{
+	sei(); // set SREG I-bit
+}
+
+void disable_interrupt(void)
+{
+	cli(); // clear SREG I-bit
+}
+
+void enable_timer_interrupt(void)
+{
+	TCCR1A = 0; // clear TCCR1A
+
+	// Task 2.3
+
+	// In TCCR1B: Setup CTC mode, set the prescaler you will use with set_cycles() compare value
+	TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10); // equivalent to 00001011
+	// 16,000,000/X * (.1) <= 2^16 (16 bit)
+
+	// In TIMSK1: Set the OCIE1A bit to enable the timer interrupt.
+	TIMSK1 |= (1 << OCIE1A);	
+}
+// End snippet from Lab 9 eecs_388_lib.c lines 293-326

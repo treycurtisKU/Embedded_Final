@@ -11,10 +11,16 @@
  *   Constant definitions
  *******************************************************************************/
 
-//Straight forward GPIO+LED naming scheme:
-#define RED_13   GPIO_13
+// Straight forward GPIO+LED naming scheme:
+#define RED_13 GPIO_13
 #define GREEN_12 GPIO_12
-#define BLUE_11  GPIO_11
+#define BLUE_11 GPIO_11
+
+// Snippet from Lab 9 eecs_388_interrupts.cpp lines 5-6
+// ADAPTED: Replace red/green selection with flashing enable, and start with flashing disabled.
+volatile uint8_t flash_enabled = 0;
+volatile uint8_t led_state = 0;
+// End snippet from Lab 9 eecs_388_interrupts.cpp lines 5-6
 
 /*ServoMotor constants*/
 #define SERVO_PULSE_MAX (2400) /* 2400 us */
@@ -49,27 +55,30 @@ static void auto_brake()
   {
     gpio_write(GREEN_12, OFF);
     gpio_write(BLUE_11, OFF);
-    
-    //Red flashing (interrupt driven, supplemented by lab 9)
-    gpio_write(RED_13, ON);
+
+    // Red flashing (interrupt driven, supplemented by lab 9)
+    flash_enabled = 1;
   }
   if (dist > 60 && dist <= 100)
   {
-    //Red static
+    // Red static
+    flash_enabled = 0;
     gpio_write(RED_13, ON);
     gpio_write(GREEN_12, OFF);
     gpio_write(BLUE_11, OFF);
   }
   if (dist > 100 && dist <= 200)
   {
-    //Red static + green static = yellow static
+    // Red static + green static = yellow static
+    flash_enabled = 0;
     gpio_write(RED_13, ON);
     gpio_write(GREEN_12, ON);
     gpio_write(BLUE_11, OFF);
   }
   if (dist > 200)
   {
-    //Green static
+    // Green static
+    flash_enabled = 0;
     gpio_write(RED_13, OFF);
     gpio_write(GREEN_12, ON);
     gpio_write(BLUE_11, OFF);
@@ -112,6 +121,16 @@ void setup()
 
   // Setup GPIO_6 for PWM output
   gpio_mode(GPIO_6, GPIO_OUTPUT);
+
+  // Snippet from Lab 9 eecs_388_interrupts.cpp lines 20-24
+  // ADAPTED: Disable interrupts during setup; use 50 ms interrupts for a 100 ms complete red flash cycle.
+  disable_interrupt();
+  enable_timer_interrupt();
+  set_cycles(12499);
+
+  enable_interrupt();
+  // Disable interrupts while configuring the timer.
+  // End snippet from Lab 9 eecs_388_interrupts.cpp lines 20-24
 
   ser_printf("System Initialized");
 }
@@ -157,3 +176,22 @@ void loop()
     // steering(angle);
   }
 }
+
+// Snippet from Lab 9 eecs_388_interrupts.cpp lines 30, 49-65, 76
+// ADAPTED: Only need to toggle red, removed green logic
+ISR(TIMER1_COMPA_vect)
+{
+  if (flash_enabled == 1)
+  {
+    gpio_write(RED_13, led_state);
+    if (led_state == 0)
+    {
+      led_state = 1;
+    }
+    else
+    {
+      led_state = 0;
+    }
+  }
+}
+// End snippet from Lab 9 eecs_388_interrupts.cpp lines 30, 49-65, 76
