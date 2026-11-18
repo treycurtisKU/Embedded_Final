@@ -48,9 +48,26 @@ static void auto_brake()
   // Your code goes here (Use Lab 2 & 4 for reference)
   // Check the project document to understand the task
 
-  
+  uint16_t dist = 0;
+  // Snippet from Lab 4 eecs_388_tfmini.cpp lines 61-81, 107-109
+  //ADAPTED: 
+  uint8_t one = ser_read();
+  if (0xAA == one)
+  {
+    uint8_t two = ser_read();
+    if (0x55 == two)
+    {
+      uint8_t Dist_L = ser_read(); // third byte
+      uint8_t Dist_H = ser_read(); // fourth byte
 
-  uint16_t dist = 250; // Temporary test distance to delete
+      uint8_t checksum = ser_read();
+
+      uint8_t sum = Dist_L ^ Dist_H;
+
+      if (checksum == sum)
+    }
+  }
+  // End snippet from Lab 4 eecs_388_tfmini.cpp lines 61-81, 107-109
 
   // Snippet from Lab 4 tfmini.cpp lines 83-106 (ADAPTED: New values for parameters, and new LED states)
   if (dist <= 60)
