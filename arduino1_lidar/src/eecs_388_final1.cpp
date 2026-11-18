@@ -84,6 +84,7 @@ void loop()
                 {
 
                     dist = Dist_L | ((uint16_t)Dist_H << 8);
+                    ser_printf("Distance: %u cm", dist); //Print distance readout to terminal, can remove once verified working
                 }
             }
         }
