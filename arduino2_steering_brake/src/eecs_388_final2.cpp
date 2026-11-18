@@ -62,7 +62,7 @@ static void auto_brake()
 
       uint8_t checksum = ser_read();
 
-      uint8_t sum = one + two + Dist_L + Dist_H + five + six + seven + eight;
+      uint8_t sum = Dist_L ^ Dist_H;
 
       if (checksum == sum)
       {
