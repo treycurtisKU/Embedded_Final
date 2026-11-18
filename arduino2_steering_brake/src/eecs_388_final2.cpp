@@ -48,6 +48,8 @@ static void auto_brake()
   // Your code goes here (Use Lab 2 & 4 for reference)
   // Check the project document to understand the task
 
+  
+
   uint16_t dist = 250; // Temporary test distance to delete
 
   // Snippet from Lab 4 tfmini.cpp lines 83-106 (ADAPTED: New values for parameters, and new LED states)
