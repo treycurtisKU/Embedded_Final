@@ -7,6 +7,13 @@
 
 #include "eecs_388_lib.h"
 
+//task 3 setup
+uint16_t dist = 0; /*globally declared - LIDAR distance data is 16 bits. */
+
+unsigned long lastSendTime = 0;
+const unsigned long SEND_INTERVAL = 200; //sends data every 200ms
+
+bool validFrame = false;
 /******************************************************************************
  *   Function: setup() - Initializes the Arduino System
  *      Pre condition:
@@ -15,6 +22,19 @@
  *          Runs initialization calls one time on power up
  *          Input/Output (IO) pins are configured
  *******************************************************************************/
+//task 3 sending distance to arduino2
+void sendDistance(uint16_t distance)
+{
+    uint8_t low = distance & 0xFF; // lower byte
+    uint8_t high = (distance >> 8) & 0xFF; // higher byte
+
+    ser_write(0xAA); //first packet header
+    ser_write(0x55); //second packet header
+    ser_write(low); //send lower byte
+    ser_write(high); //send higher byte
+    ser_write(low ^ high); //send checksum
+}
+
 void setup()
 {
     uart_init();
@@ -32,8 +52,6 @@ void setup()
  *******************************************************************************/
 void loop()
 {
-    uint16_t dist = 0; /* LIDAR distance data is 16 bits. */
-
     ser_printline("Setup completed.");
     ser_write('\n');
 
@@ -84,11 +102,20 @@ void loop()
                 {
 
                     dist = Dist_L | ((uint16_t)Dist_H << 8);
-                    ser_printf("Distance: %u cm", dist); //Print distance readout to terminal, can remove later
+                    validFrame = true;
                 }
             }
         }
         // End snippet from Lab 4 tfmini.cpp lines 61-81
+
+        //task 3 sending distance every 200 ms
+        unsigned long currentTime = millis(); //get number of milliseconds since the arudino board 1 started
+
+        if (validFrame && (currentTime - lastSendTime >= SEND_INTERVAL)) //checks if the frame is valid and if 200 ms has passed since the last send
+        {
+            lastSendTime = currentTime;
+            sendDistance(dist); //sends the latest distance value to arduino2
+        }
     }
 
     return;
