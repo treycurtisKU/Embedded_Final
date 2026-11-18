@@ -7,6 +7,18 @@ This repository contains two separate PlatformIO projects for Arduino Uno:
 
 Each project includes its own `platformio.ini`, source files, headers, and reference documentation. PlatformIO generates its `.pio/` folder locally; Git ignores it.
 
+## Matthew's Lab 10 rework
+
+Work in `Lab10/Lab10_Matthew_Rework` on branch `matthew/lab10-rework`.
+Both Arduino projects start from the supplied templates. Bring in prior lab code
+one section at a time, adapting and verifying it against the final requirements.
+The template starting point is intentionally incomplete.
+
+`Lab10/Embedded_Final` is the group's existing checkout. The sibling
+`Lab10/untouched original supplied` folder is a read-only reference for this
+workflow: never edit it. Merge the rework branch into `main` once it covers the
+group's completed functionality and has been verified.
+
 ## First-time setup in VS Code
 
 1. Make sure Git is installed and available to VS Code. No terminal commands are needed for the normal workflow below.
