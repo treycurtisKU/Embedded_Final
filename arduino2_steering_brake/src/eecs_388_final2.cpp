@@ -16,11 +16,20 @@
 #define GREEN_12 GPIO_12
 #define BLUE_11 GPIO_11
 
-// Snippet from Lab 9 eecs_388_interrupts.cpp lines 5-6
+// Snippet from Lab 9 eecs_388_interrupts.cpp lines 4-6
 // ADAPTED: Replace red/green selection with flashing enable, and start with flashing disabled.
+volatile uint8_t interrupt_count = 0;
 volatile uint8_t flash_enabled = 0;
 volatile uint8_t led_state = 0;
-// End snippet from Lab 9 eecs_388_interrupts.cpp lines 5-6
+// End snippet from Lab 9 eecs_388_interrupts.cpp lines 4-6
+
+//Breaking distances
+#define no_break 0 //distance >200 cm (green)
+#define slight_break 1 // 100 < distance <= 200 cm (yellow)
+#define hard_break 2 //60 < distance <= 100cm (red)
+#define max_break 3 // distance <= 60cm (flash red)
+//Start off in no brake
+volatile uint8_t braking_state = no_break;
 
 /*ServoMotor constants*/
 #define SERVO_PULSE_MAX (2400) /* 2400 us */
@@ -30,8 +39,17 @@ volatile uint8_t led_state = 0;
 #define MAX_ANGLE (180)        /* degrees */
 
 // Servo pulse durations. To be shared with timer ISR (microseconds)
-volatile uint16_t servo_high_us = SERVO_PULSE_MIN;
-volatile uint16_t servo_low_us = SERVO_PERIOD - SERVO_PULSE_MIN;
+volatile uint16_t servo_high_time = SERVO_PULSE_MIN;
+volatile uint16_t servo_low_time = SERVO_PERIOD - SERVO_PULSE_MIN;
+uint8_t servo_status = 0; // 0 = GPIO 6 LOW, 1 = GPIO 6 HIGH
+uint16_t servo_active_low_time = SERVO_PERIOD - SERVO_PULSE_MIN;
+
+// Task 4. Steering angles, to loop in this order.
+const int angle_values[] = {10, 25, 75, 45, 100, 40, 125, 15, 150, 50, 170};
+const uint8_t angle_count = 11;
+uint8_t angle_indexer = 0; // Track which angle we're iterating on
+unsigned long lastAngleChange = 0;
+const unsigned long angle_interval = 1000; // holy each angle for one second
 
 /******************************************************************************
  *   Local function prototypes
@@ -143,15 +161,30 @@ static void steering(int pos)
   int32_t low_time = SERVO_PERIOD - high_time;
   // End snippet from Lab 5 eecs_388_pwm.cpp line 123-124
 
-  // Update both durations without interruption.
-uint8_t saved_sreg = SREG;
-disable_interrupt();
-
-servo_high_us = high_time;
-servo_low_us = low_time;
-
-SREG = saved_sreg;
+  // Share calculations outside this function without interrupt
+  disable_interrupt();
+  servo_high_time = high_time;
+  servo_low_time = low_time;
+  enable_interrupt();
 }
+
+// Snippet from Lab 9 eecs_388_lib.c lines 314-326
+// ADAPTED: Configure Timer2 for 1 ms interrupts instead of Timer1.
+void enable_led_timer_interrupt(void)
+{
+  TCCR2B = 0; // stop timer 2 while configing it
+
+  // Task 2.3
+
+  // In TCCR1B: Setup CTC mode, set the prescaler you will use with set_cycles() compare value
+  TCCR2A = (1 << WGM21);  // timer2 in ctc mode. resetafter ocr2a match
+  TCNT2 = 0;              // Start the counter at zero
+  OCR2A = 249;            // 16MHz/64. 250 ticks for a 1ms period
+  TIFR2 = (1 << OCF2A);   // Clear any pending Timer2 compare A interrupt before enabling it.
+  TIMSK2 = (1 << OCIE2A); // Enable timer2. Compare A interrupts
+  TCCR2B = (1 << CS22);   // Start timer2 with prescaler 64
+}
+// End snippet from Lab 9 eecs_388_lib.c lines 314-326
 
 /******************************************************************************
  *   Function: setup() - Initializes the Arduino System
@@ -175,11 +208,18 @@ void setup()
   // Setup GPIO_6 for PWM output
   gpio_mode(GPIO_6, GPIO_OUTPUT);
 
+  steering(angle_values[0]);
+  lastAngleChange = millis();
   // Snippet from Lab 9 eecs_388_interrupts.cpp lines 20-24
-  // ADAPTED: Disable interrupts during setup; use 50 ms interrupts for a 100 ms complete red flash cycle.
+  // ADAPTED: Configure Timer2 for 1 ms interrupts; count 50 ticks between brake toggles.
   disable_interrupt();
+  enable_led_timer_interrupt();
+
+  gpio_write(GPIO_6, OFF); // Start the servo signal low before pulses
+  servo_status = 0;
   enable_timer_interrupt();
-  set_cycles(12499);
+  set_cycles((servo_low_time / 4) - 1); // First interrupt starts high pulse
+  TIFR1 = (1 << OCF1A);                 // Clear Timer1 compare A interrupt before enabling more
 
   enable_interrupt();
   // Disable interrupts while configuring the timer.
@@ -198,53 +238,79 @@ void setup()
  *******************************************************************************/
 void loop()
 {
-  // Task-4:
-  // Setup simulated code for the angles from the lab sheet
-  int angle;
-
-  // Task-1&2:
-  // Receive data from arudino1 for the distance and setup the LEDs
-  auto_brake();
-
   //  Task-4:
-  for (int i = 0; i < 10; i++)
+  // pasted and adapted from final1.cpp. Advance thru different steering angles. One per second
+  unsigned long currentTime = millis(); // reads current time
+
+  if (currentTime - lastAngleChange >= angle_interval) // check if 1 second has passed
   {
-    // Here, we set the angle to 180 if the prediction from the DNN is a positive angle
-    // and 0 if the prediction is a negative angle.
-    // This is so that it is easier to see the movement of the servo.
-    // You are welcome to pass the angle values directly to the steering function.
-    // If the servo function is written correctly, it should still work,
-    // only the movements of the servo will be more subtle
-    if (angle > 0)
+    lastAngleChange = currentTime;
+    // advance to the next angle in the array. loop to start if at the end
+    angle_indexer = angle_indexer + 1;
+    if (angle_indexer >= angle_count)
     {
-      steering(180);
-    }
-    else
-    {
-      steering(0);
+      angle_indexer = 0;
     }
 
-    // Uncomment the line below to see the actual angles on the servo.
-    // Remember to comment out the if-else statement above!
-    // steering(angle);
+    steering(angle_values[angle_indexer]);
   }
+  // Tasks 2 and 3. Recieve distance from first arduino and update brake LEDs
+  auto_brake();
 }
 
 // Snippet from Lab 9 eecs_388_interrupts.cpp lines 30, 49-65, 76
 // ADAPTED: Only need to toggle red, removed green logic
-ISR(TIMER1_COMPA_vect)
+ISR(TIMER2_COMPA_vect) // Runs when Timer2 reachers compare value. Handles brake LED timing
 {
-  if (flash_enabled == 1)
+  // Snippet from Lab 9 eecs_388_interrupts.cpp lines 32-36
+  // ADAPTED: Use Timer2 and count 50 one-millisecond ticks; toggle only red.
+  interrupt_count = interrupt_count + 1;
+  // Task 3.2 - Write code to blink the red LED every 100ms for 1 second.  Then
+  if (interrupt_count == 50)
   {
-    gpio_write(RED_13, led_state);
-    if (led_state == 0)
+    // End snippet from Lab 9 eecs_388_interrupts.cpp lines 32-36
+    interrupt_count = 0;
+    if (flash_enabled == 1)
     {
-      led_state = 1;
-    }
-    else
-    {
-      led_state = 0;
+      gpio_write(RED_13, led_state);
+      if (led_state == 0)
+      {
+        led_state = 1;
+      }
+      else
+      {
+        led_state = 0;
+      }
     }
   }
 }
 // End snippet from Lab 9 eecs_388_interrupts.cpp lines 30, 49-65, 76
+
+// Inspired by the above snippet.
+// Runs when Timer1 reaches compare value and handles servo pulse timing
+ISR(TIMER1_COMPA_vect)
+{
+  // Start a new pulse when the servo signal is LOW
+  if (servo_status == 0)
+  {
+    // Capture matching durations before starting pulse
+    uint16_t high_time = servo_high_time;
+    servo_active_low_time = servo_low_time;
+
+    gpio_write(GPIO_6, ON);
+
+    servo_status = 1;
+
+    // Timer1 ticks every 4 microsecs. Subtract 1 because counting starts at zero.
+    set_cycles((high_time / 4) - 1);
+  }
+  else
+  {
+    // end the high pulse and hold low
+    gpio_write(GPIO_6, OFF);
+
+    servo_status = 0;
+
+    set_cycles((servo_active_low_time / 4) - 1);
+  }
+}
