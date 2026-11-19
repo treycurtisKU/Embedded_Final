@@ -29,6 +29,10 @@ volatile uint8_t led_state = 0;
 #define MIN_ANGLE (0)          /* degrees */
 #define MAX_ANGLE (180)        /* degrees */
 
+// Servo pulse durations. To be shared with timer ISR (microseconds)
+volatile uint16_t servo_high_us = SERVO_PULSE_MIN;
+volatile uint16_t servo_low_us = SERVO_PERIOD - SERVO_PULSE_MIN;
+
 /******************************************************************************
  *   Local function prototypes
  *******************************************************************************/
