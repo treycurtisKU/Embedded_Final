@@ -142,6 +142,15 @@ static void steering(int pos)
   int32_t high_time = SERVO_PULSE_MIN + ((pos / 5) * 51.56);
   int32_t low_time = SERVO_PERIOD - high_time;
   // End snippet from Lab 5 eecs_388_pwm.cpp line 123-124
+
+  // Update both durations without interruption.
+uint8_t saved_sreg = SREG;
+disable_interrupt();
+
+servo_high_us = high_time;
+servo_low_us = low_time;
+
+SREG = saved_sreg;
 }
 
 /******************************************************************************
