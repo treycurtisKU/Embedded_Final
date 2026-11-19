@@ -135,7 +135,7 @@ static void steering(int pos)
 
   // Snippet from Lab 5 eecs_388_pwm.cpp line 123
   // ADAPTED: Change from 30 to 5 degree increments, and lower the time per step from 309
-  int32_t high_time = SERVO_PULSE_MIN + ((angle / 5) * 51.56);
+  int32_t high_time = SERVO_PULSE_MIN + ((pos / 5) * 51.56);
   // End snippet from Lab 5 eecs_388_pwm.cpp line 123
 }
 
