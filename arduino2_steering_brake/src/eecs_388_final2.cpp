@@ -78,6 +78,10 @@ static void auto_brake()
       return;
     }
   }
+  else
+  {
+    return;
+  }
   // End snippet from Lab 4 eecs_388_tfmini.cpp lines 61-81, 107-109
 
   // Snippet from Lab 4 tfmini.cpp lines 83-106 (ADAPTED: New values for parameters, and new LED states)
