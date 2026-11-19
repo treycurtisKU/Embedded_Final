@@ -133,10 +133,11 @@ static void steering(int pos)
   // Your code goes here (Use Lab 05 for reference)
   // Check the project document to understand the task
 
-  // Snippet from Lab 5 eecs_388_pwm.cpp line 123
+  // Snippet from Lab 5 eecs_388_pwm.cpp line 123-124
   // ADAPTED: Change from 30 to 5 degree increments, and lower the time per step from 309
   int32_t high_time = SERVO_PULSE_MIN + ((pos / 5) * 51.56);
-  // End snippet from Lab 5 eecs_388_pwm.cpp line 123
+  int32_t low_time = SERVO_PERIOD - high_time;
+  // End snippet from Lab 5 eecs_388_pwm.cpp line 123-124
 }
 
 /******************************************************************************
