@@ -157,8 +157,10 @@ static void steering(int pos)
 
   // Snippet from Lab 5 eecs_388_pwm.cpp line 123-124
   // ADAPTED: Change from 30 to 5 degree increments, and lower the time per step from 309
-  int32_t high_time = SERVO_PULSE_MIN + ((pos / 5) * 51.56);
-  int32_t low_time = SERVO_PERIOD - high_time;
+  pos = constrain (pos, Min_Angle, Max_Angle);
+
+  uint16_t high_time = SERVO_PULSE_MIN + ((uint32_t)pos * (SERVO_PULSE_MAX - SERVO_PULSE_MIN)) / (MAX_ANGLE - MIN_ANGLE);
+  uint16_t low_time = SERVO_PERIOD - high_time;
   // End snippet from Lab 5 eecs_388_pwm.cpp line 123-124
 
   // Share calculations outside this function without interrupt
